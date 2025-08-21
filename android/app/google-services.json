@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "321687917971",
+    "project_id": "flui-app-1cd4e",
+    "storage_bucket": "flui-app-1cd4e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321687917971:android:c74d3cb4dd23b99f148466",
+        "android_client_info": {
+          "package_name": "com.example.flui_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZGaTjg2UGOOVvVUmC477B47Mp2NSYHzg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
