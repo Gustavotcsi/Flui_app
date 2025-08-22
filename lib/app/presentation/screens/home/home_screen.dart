@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Variáveis de estado para os filtros
   String? _selectedFilterCategory;
-  bool? _selectedFilterIsPaid; // bool nulo para "Todos" (true=Pagas, false=Não Pagas)
+  bool? _selectedFilterIsPaid;
   DateTimeRange? _selectedFilterDateRange;
 
   // Função para fazer logout
@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await FirebaseFirestore.instance
           .collection('expenses')
           .doc(docId)
-          .update({'isPaid': !currentStatus}); // Inverte o status atual
+          .update({'isPaid': !currentStatus});
     } catch (e) {
       print('Erro ao atualizar status de pagamento: $e');
     }
@@ -65,8 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
-        // Usamos StatefulBuilder para que a planilha tenha seu próprio estado interno
-        // sem precisar reconstruir a tela inteira a cada seleção.
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
             return Container(
@@ -116,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       TextButton(
                         onPressed: () {
-                          // Limpa os filtros na HomeScreen e fecha a planilha
                           setState(() {
                             _selectedFilterCategory = null;
                             _selectedFilterIsPaid = null;
@@ -129,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 8),
                       ElevatedButton(
                         onPressed: () {
-                          // Aplica os filtros na HomeScreen e fecha a planilha
                           setState(() {});
                           Navigator.pop(context);
                         },
@@ -204,14 +200,21 @@ class _HomeScreenState extends State<HomeScreen> {
             return dateA.compareTo(dateB);
           });
 
-          // Lógica de cálculo do total
+          // **A CORREÇÃO ESTÁ AQUI**
+          // Lógica de cálculo do total, somando apenas as despesas NÃO PAGAS
           double totalFiltered = filteredDocs.fold(0.0, (sum, doc) {
-            return sum + ((doc.data() as Map<String, dynamic>)['amount'] as num);
+            var data = doc.data() as Map<String, dynamic>;
+            bool isPaid = data['isPaid'] ?? false;
+            if (!isPaid) { // Apenas soma se a despesa não estiver paga
+              return sum + (data['amount'] as num);
+            }
+            return sum;
           });
 
-          String totalLabel = 'Despesas Totais:';
+          // Rótulo dinâmico
+          String totalLabel = 'Total a Pagar:'; // Rótulo melhorado
           if (_selectedFilterCategory != null || _selectedFilterIsPaid != null || _selectedFilterDateRange != null) {
-            totalLabel = 'Total Filtrado:';
+            totalLabel = 'Total a Pagar (Filtrado):';
           }
 
           return Column(
