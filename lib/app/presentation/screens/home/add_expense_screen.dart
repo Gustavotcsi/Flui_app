@@ -82,7 +82,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         'isRecurring': _isRecurring,
         'category': _selectedCategory,
         'createdAt': FieldValue.serverTimestamp(),
-        'isPaid': false, 
+        'isPaid': !_isRecurring,
       });
 
       if (mounted) {
