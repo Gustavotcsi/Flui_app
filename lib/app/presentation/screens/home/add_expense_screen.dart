@@ -12,11 +12,11 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  // Controllers para os campos de texto
+  
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
 
-  // Variáveis para os outros campos
+  
   DateTime? _dueDate;
   bool _isRecurring = false;
   String? _selectedCategory;
@@ -39,7 +39,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  // Função para abrir o seletor de data
+  
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -54,9 +54,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  // Função para salvar a despesa no Firestore
+  
   Future<void> _saveExpense() async {
-    // Validação simples
+    
     if (_nameController.text.isEmpty ||
         _amountController.text.isEmpty ||
         _dueDate == null ||
@@ -156,7 +156,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
             ],
           ),
-          // Switch para Recorrência
+          
           SwitchListTile(
             title: const Text('Cobrança Recorrente?'),
             value: _isRecurring,

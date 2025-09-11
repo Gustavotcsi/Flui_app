@@ -31,7 +31,7 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (mounted) {
-        // Mostra uma mensagem de sucesso
+        
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Conta criada com sucesso! Por favor, faça o login.'),
@@ -39,13 +39,13 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         );
         
-        // Navega para a tela de login e substitui a tela de cadastro da pilha
+        
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
-      // TODO: Melhorar o feedback de erro para o usuário (como fizemos na tela de login)
+      
       print('Erro ao criar usuário: ${e.code}');
     }
   }

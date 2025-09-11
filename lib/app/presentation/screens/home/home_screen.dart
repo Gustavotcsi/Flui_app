@@ -6,6 +6,7 @@ import 'package:flui_app/app/presentation/screens/home/add_expense_screen.dart';
 import 'package:flui_app/app/presentation/screens/home/edit_expense_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,32 +15,67 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-// Adicionamos 'SingleTickerProviderStateMixin' para controlar a animação das abas
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final user = FirebaseAuth.instance.currentUser;
-  
-  // Controller para as abas
   late TabController _tabController;
-
-  // Variáveis de estado para os filtros (continuam as mesmas)
   String? _selectedFilterCategory;
-  bool? _selectedFilterIsPaid; 
+  bool? _selectedFilterIsPaid;
   DateTimeRange? _selectedFilterDateRange;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Inicializa o controller com 2 abas
+    _tabController = TabController(length: 2, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController.dispose(); // Limpa o controller ao sair da tela
+    _tabController.dispose();
     super.dispose();
   }
+  
+ 
+  void showPaymentSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        });
 
-  // --- Funções de Ação ---
-  // Todas as funções agora pertencem diretamente à _HomeScreenState e funcionarão corretamente.
+        return Dialog(
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16.0)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/animations/payment_success.json',
+                  repeat: false,
+                  width: 150,
+                  height: 150,
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Pagamento Realizado!',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
@@ -64,17 +100,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  
   Future<void> _togglePaidStatus(String docId, bool currentStatus) async {
     try {
       await FirebaseFirestore.instance
           .collection('expenses')
           .doc(docId)
           .update({'isPaid': !currentStatus});
+
+      
+      if (!currentStatus) {
+        if (mounted) {
+          showPaymentSuccessDialog(context);
+        }
+      }
     } catch (e) {
       print('Erro ao atualizar status de pagamento: $e');
     }
   }
 
+
+  
   void _showFilterSheet() {
     showModalBottomSheet(
       context: context,
@@ -82,7 +128,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       builder: (ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            // O código da planilha de filtros continua o mesmo, sem alterações.
             return Container(
               padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
               child: Wrap(
@@ -152,8 +197,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // NOVO WIDGET REUTILIZÁVEL: Para construir a lista de despesas
-  // Extraímos a lógica da lista para esta função para evitar repetição de código.
   Widget _buildExpenseList(List<DocumentSnapshot> docs) {
     if (docs.isEmpty) {
       return const Center(child: Text("Nenhuma despesa para exibir."));
@@ -242,7 +285,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             );
           }
 
-          // Lógica de Filtragem (continua a mesma)
           var filteredDocs = allDocs;
           if (_selectedFilterCategory != null) { filteredDocs = filteredDocs.where((d) => (d.data() as Map)['category'] == _selectedFilterCategory).toList(); }
           if (_selectedFilterIsPaid != null) { filteredDocs = filteredDocs.where((d) => (d.data() as Map)['isPaid'] == _selectedFilterIsPaid).toList(); }
@@ -252,11 +294,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             }).toList();
           }
 
-          // **NOVA LÓGICA: Divisão entre pagas e não pagas**
           final unpaidExpenses = filteredDocs.where((doc) => !(doc.data() as Map)['isPaid']).toList();
           final paidExpenses = filteredDocs.where((doc) => (doc.data() as Map)['isPaid']).toList();
 
-          // Ordena as listas pela data de vencimento
           unpaidExpenses.sort((a,b) => ((a.data() as Map)['dueDate'] as Timestamp).compareTo((b.data() as Map)['dueDate']));
           paidExpenses.sort((a,b) => ((a.data() as Map)['dueDate'] as Timestamp).compareTo((b.data() as Map)['dueDate']));
 
@@ -275,7 +315,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 IconButton(icon: const Icon(Icons.filter_list), onPressed: _showFilterSheet, tooltip: 'Filtrar'),
                 IconButton(icon: const Icon(Icons.logout), onPressed: _signOut, tooltip: 'Sair'),
               ],
-              // **Adiciona a barra de abas abaixo da AppBar**
               bottom: TabBar(
                 controller: _tabController,
                 tabs: [
@@ -287,9 +326,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             body: TabBarView(
               controller: _tabController,
               children: [
-                // Corpo da Aba "Pendentes"
                 _buildExpenseList(unpaidExpenses),
-                // Corpo da Aba "Pagas"
                 _buildExpenseList(paidExpenses),
               ],
             ),

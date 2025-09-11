@@ -28,10 +28,10 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExpenseData(); // Carrega os dados da despesa ao iniciar a tela
+    _loadExpenseData(); 
   }
 
-  // Função para carregar os dados existentes do Firestore
+  
   Future<void> _loadExpenseData() async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -73,10 +73,10 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
     }
   }
 
-  // Função para ATUALIZAR a despesa
+ 
   Future<void> _updateExpense() async {
     if (_nameController.text.isEmpty || _amountController.text.isEmpty || _dueDate == null || _selectedCategory == null) {
-      // ... (validação continua a mesma)
+      
       return;
     }
 
