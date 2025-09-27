@@ -12,11 +12,9 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
 
-  
   DateTime? _dueDate;
   bool _isRecurring = false;
   String? _selectedCategory;
@@ -29,7 +27,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'Saúde',
     'Lazer',
     'Educação',
-    'Outros'
+    'Outros',
   ];
 
   @override
@@ -39,7 +37,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -54,54 +51,76 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  
   Future<void> _saveExpense() async {
-    
     if (_nameController.text.isEmpty ||
         _amountController.text.isEmpty ||
         _dueDate == null ||
         _selectedCategory == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Por favor, preencha todos os campos.'),
-        backgroundColor: Colors.redAccent,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, preencha todos os campos.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
       return;
     }
 
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final dueDateWithoutTime = DateTime(
+        _dueDate!.year,
+        _dueDate!.month,
+        _dueDate!.day,
+      );
+      final bool isPaid = dueDateWithoutTime.isAtSameMomentAs(today);
+
       await FirebaseFirestore.instance.collection('expenses').add({
-        'userId': user.uid, 
+        'userId': user.uid,
         'name': _nameController.text.trim(),
-        'amount': double.parse(_amountController.text.trim().replaceAll(',', '.')),
-        'dueDate': Timestamp.fromDate(_dueDate!), 
+        'amount': double.parse(
+          _amountController.text.trim().replaceAll(',', '.'),
+        ),
+        'dueDate': Timestamp.fromDate(_dueDate!),
         'isRecurring': _isRecurring,
         'category': _selectedCategory,
         'createdAt': FieldValue.serverTimestamp(),
-        'isPaid': !_isRecurring,
+        'isPaid': isPaid,
+        'paidAt': isPaid ? Timestamp.now() : null,
       });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Despesa salva com sucesso!'),
-          backgroundColor: Colors.green,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Despesa salva com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
         Navigator.of(context).pop(); // Volta para a HomeScreen
       }
     } catch (e) {
       print('Erro ao salvar despesa: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Ocorreu um erro ao salvar a despesa.'),
-          backgroundColor: Colors.redAccent,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Ocorreu um erro ao salvar a despesa.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
       }
     } finally {
-      if (mounted) { setState(() { _isLoading = false; }); }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -119,7 +138,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           const SizedBox(height: 16),
           TextFormField(
             controller: _amountController,
-            decoration: const InputDecoration(labelText: 'Valor (R\$)', prefixText: 'R\$ '),
+            decoration: const InputDecoration(
+              labelText: 'Valor (R\$)',
+              prefixText: 'R\$ ',
+            ),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
           ),
           const SizedBox(height: 16),
@@ -156,7 +178,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               ),
             ],
           ),
-          
+
           SwitchListTile(
             title: const Text('Cobrança Recorrente?'),
             value: _isRecurring,
@@ -169,7 +191,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: _isLoading ? null : _saveExpense,
-            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
             child: _isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text('SALVAR DESPESA'),
