@@ -1,6 +1,5 @@
-// lib/app/presentation/screens/auth/login_screen.dart
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flui_app/app/presentation/screens/home/home_screen.dart'; // Import do painel
+import 'package:flui_app/app/presentation/screens/main/main_page.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,16 +22,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signIn() async {
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       if (mounted) {
-        
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const MainPage()),
           (Route<dynamic> route) => false,
         );
       }
@@ -51,30 +51,40 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } finally {
-      if (mounted) { setState(() { _isLoading = false; }); }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _forgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Por favor, digite seu e-mail para redefinir a senha.'),
-        backgroundColor: Colors.orangeAccent,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, digite seu e-mail para redefinir a senha.'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
       return;
     }
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Link de redefinição enviado! Verifique seu e-mail.'),
-        backgroundColor: Colors.green,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Link de redefinição enviado! Verifique seu e-mail.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } on FirebaseAuthException {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Erro: e-mail não encontrado ou inválido.'),
-        backgroundColor: Colors.redAccent,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Erro: e-mail não encontrado ou inválido.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     }
   }
 
@@ -96,21 +106,36 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 60),
               TextFormField(
                 controller: _emailController,
-                decoration: const InputDecoration(labelText: 'E-mail', prefixIcon: Icon(Icons.email_outlined)),
+                decoration: const InputDecoration(
+                  labelText: 'E-mail',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Senha', prefixIcon: Icon(Icons.lock_outline)),
+                decoration: const InputDecoration(
+                  labelText: 'Senha',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
                 obscureText: true,
               ),
               const SizedBox(height: 40),
               ElevatedButton(
                 onPressed: _isLoading ? null : _signIn,
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
                 child: _isLoading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.0))
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.0,
+                        ),
+                      )
                     : const Text('ENTRAR'),
               ),
               const SizedBox(height: 16),

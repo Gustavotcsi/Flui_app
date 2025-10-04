@@ -1,8 +1,6 @@
 // lib/app/presentation/screens/home/home_screen.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flui_app/app/presentation/screens/auth/onboarding_screen.dart';
-import 'package:flui_app/app/presentation/screens/home/add_expense_screen.dart';
 import 'package:flui_app/app/presentation/screens/home/edit_expense_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -12,10 +10,10 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final user = FirebaseAuth.instance.currentUser;
   late TabController _tabController;
@@ -74,16 +72,6 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        (Route<dynamic> route) => false,
-      );
-    }
-  }
-
   Future<void> _deleteExpense(String docId) async {
     try {
       await FirebaseFirestore.instance
@@ -126,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  void _showFilterSheet() {
+  void showFilterSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -393,166 +381,125 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('expenses')
-            .where('userId', isEqualTo: user?.uid)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('expenses')
+          .where('userId', isEqualTo: user?.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          var allDocs = snapshot.data?.docs ?? [];
+        var allDocs = snapshot.data?.docs ?? [];
 
-          if (allDocs.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Minhas Despesas')),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset('assets/images/capi-inicio.png', height: 120),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Nenhuma despesa adicionada!',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    const Text('Clique no botão + para começar.'),
-                  ],
-                ),
-              ),
-              floatingActionButton: FloatingActionButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AddExpenseScreen(),
-                  ),
-                ),
-                tooltip: 'Adicionar Despesa',
-                child: const Icon(Icons.add),
-              ),
-            );
-          }
-
-          var filteredDocs = allDocs;
-          if (_selectedFilterCategory != null) {
-            filteredDocs = filteredDocs
-                .where(
-                  (d) =>
-                      (d.data() as Map)['category'] == _selectedFilterCategory,
-                )
-                .toList();
-          }
-          if (_selectedFilterIsPaid != null) {
-            filteredDocs = filteredDocs
-                .where(
-                  (d) => (d.data() as Map)['isPaid'] == _selectedFilterIsPaid,
-                )
-                .toList();
-          }
-          if (_selectedFilterDateRange != null) {
-            filteredDocs = filteredDocs.where((d) {
-              DateTime dueDate = ((d.data() as Map)['dueDate'] as Timestamp)
-                  .toDate();
-              return dueDate.isAfter(
-                    _selectedFilterDateRange!.start.subtract(
-                      const Duration(days: 1),
-                    ),
-                  ) &&
-                  dueDate.isBefore(
-                    _selectedFilterDateRange!.end.add(const Duration(days: 1)),
-                  );
-            }).toList();
-          }
-
-          final unpaidExpenses = filteredDocs
-              .where((doc) => !(doc.data() as Map)['isPaid'])
-              .toList();
-          final paidExpenses = filteredDocs
-              .where((doc) => (doc.data() as Map)['isPaid'])
-              .toList();
-
-          unpaidExpenses.sort(
-            (a, b) => ((a.data() as Map)['dueDate'] as Timestamp).compareTo(
-              (b.data() as Map)['dueDate'],
-            ),
-          );
-          paidExpenses.sort(
-            (a, b) => ((b.data() as Map)['dueDate'] as Timestamp).compareTo(
-              (a.data() as Map)['dueDate'],
-            ),
-          );
-
-          double totalUnpaid = unpaidExpenses.fold(
-            0.0,
-            (sum, doc) => sum + (doc.data() as Map)['amount'],
-          );
-
-          final now = DateTime.now();
-          final startOfMonth = DateTime(now.year, now.month, 1);
-          double totalPaidThisMonth = paidExpenses
-              .where((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                final paidDate = data['paidAt'] != null
-                    ? (data['paidAt'] as Timestamp).toDate()
-                    : (data['dueDate'] as Timestamp)
-                          .toDate(); // Fallback para dueDate
-
-                return paidDate.isAfter(startOfMonth) ||
-                    paidDate.isAtSameMomentAs(startOfMonth);
-              })
-              .fold(0.0, (sum, doc) => sum + (doc.data() as Map)['amount']);
-
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('Minhas Despesas'),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  onPressed: _showFilterSheet,
-                  tooltip: 'Filtrar',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.logout),
-                  onPressed: _signOut,
-                  tooltip: 'Sair',
-                ),
-              ],
-            ),
-            body: Column(
+        if (allDocs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildDashboard(totalUnpaid, totalPaidThisMonth),
-                TabBar(
-                  controller: _tabController,
-                  tabs: [
-                    Tab(text: 'Pendentes (${unpaidExpenses.length})'),
-                    Tab(text: 'Pagas (${paidExpenses.length})'),
-                  ],
+                Image.asset('assets/images/capi-inicio.png', height: 120),
+                const SizedBox(height: 16),
+                const Text(
+                  'Nenhuma despesa adicionada!',
+                  style: TextStyle(fontSize: 18),
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildExpenseList(unpaidExpenses),
-                      _buildExpenseList(paidExpenses),
-                    ],
-                  ),
-                ),
+                const Text('Clique no botão + para começar.'),
               ],
             ),
-            floatingActionButton: FloatingActionButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const AddExpenseScreen(),
-                ),
-              ),
-              tooltip: 'Adicionar Despesa',
-              child: const Icon(Icons.add),
-            ),
           );
-        },
-      ),
+        }
+
+        var filteredDocs = allDocs;
+        if (_selectedFilterCategory != null) {
+          filteredDocs = filteredDocs
+              .where(
+                (d) => (d.data() as Map)['category'] == _selectedFilterCategory,
+              )
+              .toList();
+        }
+        if (_selectedFilterIsPaid != null) {
+          filteredDocs = filteredDocs
+              .where(
+                (d) => (d.data() as Map)['isPaid'] == _selectedFilterIsPaid,
+              )
+              .toList();
+        }
+        if (_selectedFilterDateRange != null) {
+          filteredDocs = filteredDocs.where((d) {
+            DateTime dueDate = ((d.data() as Map)['dueDate'] as Timestamp)
+                .toDate();
+            return dueDate.isAfter(
+                  _selectedFilterDateRange!.start.subtract(
+                    const Duration(days: 1),
+                  ),
+                ) &&
+                dueDate.isBefore(
+                  _selectedFilterDateRange!.end.add(const Duration(days: 1)),
+                );
+          }).toList();
+        }
+
+        final unpaidExpenses = filteredDocs
+            .where((doc) => !(doc.data() as Map)['isPaid'])
+            .toList();
+        final paidExpenses = filteredDocs
+            .where((doc) => (doc.data() as Map)['isPaid'])
+            .toList();
+
+        unpaidExpenses.sort(
+          (a, b) => ((a.data() as Map)['dueDate'] as Timestamp).compareTo(
+            (b.data() as Map)['dueDate'],
+          ),
+        );
+        paidExpenses.sort(
+          (a, b) => ((b.data() as Map)['dueDate'] as Timestamp).compareTo(
+            (a.data() as Map)['dueDate'],
+          ),
+        );
+
+        double totalUnpaid = unpaidExpenses.fold(
+          0.0,
+          (sum, doc) => sum + (doc.data() as Map)['amount'],
+        );
+
+        final now = DateTime.now();
+        final startOfMonth = DateTime(now.year, now.month, 1);
+        double totalPaidThisMonth = paidExpenses
+            .where((doc) {
+              final data = doc.data() as Map<String, dynamic>;
+              final paidDate = data['paidAt'] != null
+                  ? (data['paidAt'] as Timestamp).toDate()
+                  : (data['dueDate'] as Timestamp)
+                        .toDate(); // Fallback para dueDate
+
+              return paidDate.isAfter(startOfMonth) ||
+                  paidDate.isAtSameMomentAs(startOfMonth);
+            })
+            .fold(0.0, (sum, doc) => sum + (doc.data() as Map)['amount']);
+
+        return Column(
+          children: [
+            _buildDashboard(totalUnpaid, totalPaidThisMonth),
+            TabBar(
+              controller: _tabController,
+              tabs: [
+                Tab(text: 'Pendentes (${unpaidExpenses.length})'),
+                Tab(text: 'Pagas (${paidExpenses.length})'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildExpenseList(unpaidExpenses),
+                  _buildExpenseList(paidExpenses),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
