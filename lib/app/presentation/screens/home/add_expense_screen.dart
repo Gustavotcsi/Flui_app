@@ -103,10 +103,10 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.of(context).pop(); // Volta para a HomeScreen
+        // Em vez de print, use um logger ou remova
       }
     } catch (e) {
-      print('Erro ao salvar despesa: $e');
+      // Em vez de print, use um logger ou remova
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -147,7 +147,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           const SizedBox(height: 16),
           // Seletor de Categoria
           DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             decoration: const InputDecoration(labelText: 'Tipo de Gasto'),
             items: _categories.map((String category) {
               return DropdownMenuItem<String>(

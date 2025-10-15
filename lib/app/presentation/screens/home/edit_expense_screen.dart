@@ -50,7 +50,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
         });
       }
     } catch (e) {
-      print("Erro ao carregar dados: $e");
+      // Em vez de print, use um logger ou remova
     }
   }
 
@@ -119,7 +119,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
                 TextFormField(controller: _amountController, decoration: const InputDecoration(labelText: 'Valor (R\$)', prefixText: 'R\$ '), keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: const InputDecoration(labelText: 'Tipo de Gasto'),
                   items: _categories.map((String category) => DropdownMenuItem<String>(value: category, child: Text(category))).toList(),
                   onChanged: (newValue) { setState(() { _selectedCategory = newValue; }); },

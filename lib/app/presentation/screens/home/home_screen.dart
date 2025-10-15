@@ -5,6 +5,8 @@ import 'package:flui_app/app/presentation/screens/home/edit_expense_screen.dart'
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:month_picker_dialog/month_picker_dialog.dart';
+import 'package:pie_chart/pie_chart.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   final user = FirebaseAuth.instance.currentUser;
+  DateTime _selectedDate = DateTime.now();
   late TabController _tabController;
   String? _selectedFilterCategory;
   bool? _selectedFilterIsPaid;
@@ -24,7 +27,7 @@ class HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -33,13 +36,28 @@ class HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _selectMonth(BuildContext context) {
+    showMonthPicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    ).then((date) {
+      if (date != null) {
+        setState(() {
+          _selectedDate = date;
+        });
+      }
+    });
+  }
+
   void showPaymentSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         Future.delayed(const Duration(seconds: 3), () {
-          if (Navigator.of(context).canPop()) {
+          if (mounted && Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
           }
         });
@@ -72,6 +90,59 @@ class HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildAnalysisTab(List<DocumentSnapshot> docs) {
+    if (docs.isEmpty) {
+      return const Center(
+          child: Text("Nenhuma despesa para analisar neste mês."));
+    }
+
+    Map<String, double> dataMap = {};
+    for (var doc in docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      String category = data['category'];
+      double amount = data['amount'];
+      dataMap[category] = (dataMap[category] ?? 0) + amount;
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const Text(
+            'Distribuição de Gastos por Categoria',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          PieChart(
+            dataMap: dataMap,
+            animationDuration: const Duration(milliseconds: 800),
+            chartLegendSpacing: 32,
+            chartRadius: MediaQuery.of(context).size.width / 2.5,
+            initialAngleInDegree: 0,
+            chartType: ChartType.ring,
+            ringStrokeWidth: 32,
+            centerText: "Gastos",
+            legendOptions: const LegendOptions(
+              showLegendsInRow: false,
+              legendPosition: LegendPosition.right,
+              showLegends: true,
+              legendTextStyle: TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            chartValuesOptions: const ChartValuesOptions(
+              showChartValueBackground: true,
+              showChartValues: true,
+              showChartValuesInPercentage: true,
+              showChartValuesOutside: false,
+              decimalPlaces: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _deleteExpense(String docId) async {
     try {
       await FirebaseFirestore.instance
@@ -87,7 +158,7 @@ class HomeScreenState extends State<HomeScreen>
         );
       }
     } catch (e) {
-      print('Erro ao apagar despesa: $e');
+      // Em vez de print, use um logger ou remova
     }
   }
 
@@ -110,7 +181,7 @@ class HomeScreenState extends State<HomeScreen>
             .update({'isPaid': false, 'paidAt': null});
       }
     } catch (e) {
-      print('Erro ao atualizar status de pagamento: $e');
+      // Em vez de print, use um logger ou remova
     }
   }
 
@@ -136,7 +207,7 @@ class HomeScreenState extends State<HomeScreen>
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   DropdownButtonFormField<String>(
-                    value: _selectedFilterCategory,
+                    initialValue: _selectedFilterCategory,
                     decoration: const InputDecoration(labelText: 'Categoria'),
                     items:
                         [
@@ -394,23 +465,46 @@ class HomeScreenState extends State<HomeScreen>
         var allDocs = snapshot.data?.docs ?? [];
 
         if (allDocs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('assets/images/capi-inicio.png', height: 120),
-                const SizedBox(height: 16),
-                const Text(
-                  'Nenhuma despesa adicionada!',
-                  style: TextStyle(fontSize: 18),
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Minhas Despesas'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () => _selectMonth(context),
                 ),
-                const Text('Clique no botão + para começar.'),
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: showFilterSheet,
+                ),
               ],
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/capi-inicio.png', height: 120),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Nenhuma despesa adicionada!',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const Text('Clique no botão + para começar.'),
+                ],
+              ),
             ),
           );
         }
 
-        var filteredDocs = allDocs;
+        // Filtro por mês selecionado
+        var monthDocs = allDocs.where((d) {
+          DateTime dueDate =
+              ((d.data() as Map)['dueDate'] as Timestamp).toDate();
+          return dueDate.year == _selectedDate.year &&
+              dueDate.month == _selectedDate.month;
+        }).toList();
+
+        var filteredDocs = monthDocs;
         if (_selectedFilterCategory != null) {
           filteredDocs = filteredDocs
               .where(
@@ -460,32 +554,58 @@ class HomeScreenState extends State<HomeScreen>
 
         double totalUnpaid = unpaidExpenses.fold(
           0.0,
-          (sum, doc) => sum + (doc.data() as Map)['amount'],
+          (previousValue, doc) => previousValue + (doc.data() as Map)['amount'],
         );
 
-        final now = DateTime.now();
-        final startOfMonth = DateTime(now.year, now.month, 1);
+        final startOfMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
         double totalPaidThisMonth = paidExpenses
             .where((doc) {
               final data = doc.data() as Map<String, dynamic>;
               final paidDate = data['paidAt'] != null
                   ? (data['paidAt'] as Timestamp).toDate()
-                  : (data['dueDate'] as Timestamp)
-                        .toDate(); // Fallback para dueDate
+                  : (data['dueDate'] as Timestamp).toDate();
 
               return paidDate.isAfter(startOfMonth) ||
                   paidDate.isAtSameMomentAs(startOfMonth);
             })
-            .fold(0.0, (sum, doc) => sum + (doc.data() as Map)['amount']);
+            .fold(
+                0.0,
+                (previousValue, doc) =>
+                    previousValue + (doc.data() as Map)['amount']);
 
         return Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Mês: ${DateFormat.yMMMM('pt_BR').format(_selectedDate)}',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.calendar_today),
+                        onPressed: () => _selectMonth(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.filter_list),
+                        onPressed: showFilterSheet,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             _buildDashboard(totalUnpaid, totalPaidThisMonth),
             TabBar(
               controller: _tabController,
               tabs: [
                 Tab(text: 'Pendentes (${unpaidExpenses.length})'),
                 Tab(text: 'Pagas (${paidExpenses.length})'),
+                const Tab(text: 'Análise'),
               ],
             ),
             Expanded(
@@ -494,6 +614,7 @@ class HomeScreenState extends State<HomeScreen>
                 children: [
                   _buildExpenseList(unpaidExpenses),
                   _buildExpenseList(paidExpenses),
+                  _buildAnalysisTab(monthDocs),
                 ],
               ),
             ),

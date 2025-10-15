@@ -41,10 +41,14 @@ dependencies:
   flutter_launcher_icons: ^0.14.4
   provider: ^6.1.2
   uuid: ^4.4.0
+  fl_chart: ^1.1.1
+  month_picker_dialog: ^6.5.0
+  pie_chart: ^5.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^6.0.0
 
   
 
