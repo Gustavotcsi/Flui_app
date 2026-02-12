@@ -29,15 +29,6 @@ O projeto foi construído utilizando as seguintes tecnologias:
 
 ---
 
-## 📸 Screenshots
-
-| Home Screen | Adicionar Gasto | Relatórios |
-|:---:|:---:|:---:|
-| <img src="assets/screenshots/home.png" width="200"> | <img src="assets/screenshots/add.png" width="200"> | <img src="assets/screenshots/report.png" width="200"> |
-
-*(Substitua os caminhos acima pelas imagens reais do seu app ou remova esta seção se não tiver prints ainda)*
-
----
 
 ## 🔧 Como Rodar o Projeto
 
@@ -51,7 +42,7 @@ Para rodar o projeto localmente, siga os passos abaixo:
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/seu-usuario/flui-app.git](https://github.com/seu-usuario/flui-app.git)
+    git clone https://github.com/Gustavotcsi/Flui_app.git
     ```
 
 2.  **Instale as dependências:**
@@ -60,10 +51,7 @@ Para rodar o projeto localmente, siga os passos abaixo:
     flutter pub get
     ```
 
-3.  **Configuração do Banco de Dados:**
-    * *Adicione aqui instruções caso seja necessário incluir um arquivo `google-services.json` ou chaves de API do Google.*
-
-4.  **Execute o App:**
+3.  **Execute o App:**
     ```bash
     flutter run
     ```
