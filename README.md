@@ -25,7 +25,7 @@ O projeto foi construído utilizando as seguintes tecnologias:
 * **[Flutter](https://flutter.dev/)** - Framework UI do Google para criar aplicativos nativos compilados.
 * **[Dart](https://dart.dev/)** - Linguagem de programação otimizada para UI.
 * **Google Services** - Banco de dados e autenticação (Firebase/Google Sheets).
-* **Provider/Bloc/GetX** - *[Preencha aqui com o seu gerenciador de estado, ex: Provider]*
+
 
 ---
 
